@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Para mi persona favorita ❤️</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* ESTILOS (CSS) - Aquí definimos lo "bonito" */
+      body {
+        background-color: #ffe6f2; /* Rosa pastel Pusheen */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        font-family: "Nunito", sans-serif;
+        color: #5e5e5e; /* Gris oscuro para texto */
+      }
+
+      .card {
+        background: white;
+        padding: 40px;
+        border-radius: 30px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        max-width: 350px;
+        position: relative;
+        overflow: hidden;
+        border: 4px solid #a3c9a8; /* Verde menta suave */
+      }
+
+      h1 {
+        font-family: "Fredoka One", cursive;
+        color: #ff85a2;
+        margin-bottom: 10px;
+      }
+
+      /* Animación para que Pusheen flote */
+      .pusheen-img {
+        width: 150px;
+        animation: flotar 3s ease-in-out infinite;
+      }
+
+      @keyframes flotar {
+        0% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-15px);
+        }
+        100% {
+          transform: translateY(0px);
+        }
+      }
+
+      .mensaje {
+        margin: 20px 0;
+        font-size: 1.1em;
+        line-height: 1.5;
+      }
+
+      /* Estilos del reproductor */
+      .player {
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 15px;
+        margin-top: 20px;
+      }
+
+      .btn-music {
+        background-color: #ff85a2;
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 20px;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 1em;
+        transition: transform 0.2s;
+      }
+
+      .btn-music:hover {
+        transform: scale(1.05);
+        background-color: #ff5c8d;
+      }
+
+      .song-title {
+        font-weight: bold;
+        margin-bottom: 10px;
+        display: block;
+        color: #7c7c7c;
+      }
+
+      /* Corazones flotantes de fondo (decoración) */
+      .bg-heart {
+        position: absolute;
+        color: rgba(255, 133, 162, 0.2);
+        font-size: 2rem;
+        z-index: -1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>¡Hola, Amor! ❤️</h1>
+
+      <img src="pusheen.gif" alt="Pusheen Love" class="pusheen-img" />
+
+      <p class="mensaje">
+        Gracias por todo el amor estos meses, amorshito mio. Felices 9 meses,
+        espero y te guste
+        <br />Te adoro muchisimo desde lo mas profundo de mi alma
+      </p>
+      <p class="mensaje">
+        MUA MUA MUA TE AMO TE AMO TE AMO TE AMO TE AMO TE AMO TE AMO TE AMO TE
+        AMO TE AMO
+        <br />
+      </p>
+
+      <a
+        href="galaxia.html"
+        class="btn-music"
+        style="margin-top: 20px; display: block; background-color: #7db9e8"
+      >
+        ✨ Explorar nuestra Galaxia ✨
+      </a>
+      <div class="player">
+        <span class="song-title" id="tituloCancion">🎵 Dale Play</span>
+        <button class="btn-music" onclick="togglePlay()">
+          ▶ Reproducir Música
+        </button>
+      </div>
+    </div>
+
+    <audio id="miAudio"></audio>
+
+    <script>
+      // JAVASCRIPT - Aquí está la lógica de la música
+
+      const playlist = [
+        { titulo: "Zoé - Ser Parte", archivo: "cancion1.mp3" },
+        { titulo: "Zoé - Tus Pupilas", archivo: "cancion2.mp3" },
+        { titulo: "Siddhartha - Tarde", archivo: "cancion3.mp3" },
+      ];
+
+      let currentSongIndex = 0;
+      const audioPlayer = document.getElementById("miAudio");
+      const tituloLabel = document.getElementById("tituloCancion");
+      const btn = document.querySelector(".btn-music");
+      let isPlaying = false;
+
+      // Cargar la primera canción
+      audioPlayer.src = playlist[0].archivo;
+
+      function togglePlay() {
+        if (isPlaying) {
+          audioPlayer.pause();
+          btn.innerText = "▶ Continuar Música";
+          isPlaying = false;
+        } else {
+          audioPlayer.play();
+          tituloLabel.innerText =
+            "🎶 Sonando: " + playlist[currentSongIndex].titulo;
+          btn.innerText = "⏸ Pausar";
+          isPlaying = true;
+        }
+      }
+
+      // Cuando termina una canción, pasa a la siguiente
+      audioPlayer.onended = function () {
+        currentSongIndex++;
+        if (currentSongIndex >= playlist.length) {
+          currentSongIndex = 0; // Vuelve al inicio
+        }
+        audioPlayer.src = playlist[currentSongIndex].archivo;
+        audioPlayer.play();
+        tituloLabel.innerText =
+          "🎶 Sonando: " + playlist[currentSongIndex].titulo;
+      };
+    </script>
+  </body>
+</html>

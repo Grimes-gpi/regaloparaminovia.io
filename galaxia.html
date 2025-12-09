@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuestra Galaxia 3D Realista 🌎</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #0d0d1a; }
+        canvas { display: block; }
+        
+        /* Estilos del Sol (Texto de bienvenida) */
+        .sun-info {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Orbitron', sans-serif;
+            color: #ff9800;
+            text-align: center;
+            font-size: 1.5em;
+            text-shadow: 0 0 15px rgba(255,152,0,0.8);
+            z-index: 100;
+            pointer-events: none;
+        }
+        
+        /* Overlay para el mensaje del planeta */
+        .message-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+            backdrop-filter: blur(5px);
+        }
+
+        .message-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .message-box {
+            background-color: #2a2a4a;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 0 40px rgba(173, 216, 230, 0.7); 
+            max-width: 500px;
+            text-align: center;
+            font-size: 1.3em;
+            line-height: 1.6;
+            position: relative;
+            border: 2px solid #aed6f1;
+            color: #f0f8ff;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .message-box h2 {
+            color: #ffeb3b; 
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 2em;
+            color: #aed6f1;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background-color: #aed6f1;
+            color: #0d0d1a;
+            padding: 10px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+            z-index: 1001;
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="sun-info">
+        Mi <br />Niña preciosa<br />
+        Eres el Sol que ilumina mi universo, mi mas grande descubrimiento
+    </div>
+
+    <div class="message-overlay" id="messageOverlay">
+        <div class="message-box">
+            <span class="close-btn" id="closeBtn">&times;</span>
+            <h2 id="overlayApodo"></h2>
+            <p id="overlayMensaje"></p>
+        </div>
+    </div>
+    
+    <a href="index.html" class="back-button">← Volver al Inicio</a>
+
+
+    <script>
+        // ----------------------------------------------------
+        // CONFIGURACIÓN THREE.JS REALISTA
+        // ----------------------------------------------------
+        
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        camera.position.z = 25;
+        
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; 
+        controls.minDistance = 5;      
+        controls.maxDistance = 100;    
+
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const interactiveObjects = [];
+        
+        // Carga de texturas
+        const textureLoader = new THREE.TextureLoader();
+
+        // 2. Definición de la Galaxia (¡Ahora con texturas e inclinación axial!)
+        const planetsData = [
+            // Mercurio
+            { 
+                radius: 0.3, 
+                texture: 'https://cdn.rawgit.com/jeromeetienne/threex.planets/master/images/mercurymap.jpg', 
+                distance: 5, 
+                speed: 0.008,
+                axialTilt: 0.01, // Inclinación real: 0.01 grados
+                apodo: "Mi Amorshito", 
+                mensaje: "En tu ojos, encuentro el universo entero."
+            },
+            // Venus
+            { 
+                radius: 0.5, 
+                texture: 'https://cdn.rawgit.com/jeromeetienne/threex.planets/master/images/venusmap.jpg', 
+                distance: 8, 
+                speed: 0.005,
+                axialTilt: 177, // Inclinación real: 177 grados (rotación inversa)
+                apodo: "Mi Princesa", 
+                mensaje: "Te necesito como el aire para respirar"
+            },
+            // Tierra
+            { 
+                radius: 0.6, 
+                texture: 'https://cdn.rawgit.com/jeromeetienne/threex.planets/master/images/earthmap1k.jpg', 
+                distance: 11, 
+                speed: 0.004,
+                axialTilt: 23.4, // Inclinación real: 23.4 grados (causa las estaciones)
+                apodo: "Mi Guapetona", 
+                mensaje: "Eres mi atardecer mas precioso."
+            },
+            // Marte
+            { 
+                radius: 0.4, 
+                texture: 'https://cdn.rawgit.com/jeromeetienne/threex.planets/master/images/marsmap1k.jpg', 
+                distance: 14, 
+                speed: 0.0035,
+                axialTilt: 25.2, // Inclinación real: 25.2 grados
+                apodo: "Mi Pastelito", 
+                mensaje: "Eres como un sueño hecho realidad."
+            },
+            // Júpiter
+            { 
+                radius: 1.5, 
+                texture: 'https://cdn.rawgit.com/jeromeetienne/threex.planets/master/images/jupitermap.jpg', 
+                distance: 20, 
+                speed: 0.002,
+                axialTilt: 3.1, // Inclinación real: 3.1 grados
+                apodo: "El amor de mi vida", 
+                mensaje: "Tu pupilas son el camino de mi alma."
+            },
+            // Saturno
+            { 
+                radius: 1.2, 
+                texture: 'https://cdn.rawgit.com/jeromeetienne/threex.planets/master/images/saturnmap.jpg', 
+                distance: 26, 
+                speed: 0.0015,
+                axialTilt: 26.7, // Inclinación real: 26.7 grados
+                apodo: "Mi Ponkesito", 
+                mensaje: "Eres tan única y brillante, te adoro.",
+                rings: true
+            }
+        ];
+
+        // 3. Creación del Sol
+        const sunGeometry = new THREE.SphereGeometry(3, 32, 32);
+        const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xff8c00, emissive: 0xffa500, emissiveIntensity: 1.2 });
+        const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+        scene.add(sun);
+
+        // 4. Iluminación (Luz Fuerte que emana del Sol)
+        const pointLight = new THREE.PointLight(0xffffff, 10, 100);
+        pointLight.position.set(0, 0, 0);
+        scene.add(pointLight);
+
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.3); 
+        scene.add(ambientLight);
+        
+        // 5. Función para crear el fondo de estrellas
+        const createStars = () => {
+            const geometry = new THREE.BufferGeometry();
+            const vertices = [];
+            const numStars = 5000;
+            const starDistance = 300;
+
+            for (let i = 0; i < numStars; i++) {
+                const x = THREE.MathUtils.randFloatSpread(starDistance * 2);
+                const y = THREE.MathUtils.randFloatSpread(starDistance * 2);
+                const z = THREE.MathUtils.randFloatSpread(starDistance * 2);
+                vertices.push(x, y, z);
+            }
+
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            
+            const material = new THREE.PointsMaterial({ color: 0xffffff, size: 0.2 });
+            const stars = new THREE.Points(geometry, material);
+            scene.add(stars);
+        };
+        createStars();
+
+
+        // 6. Función para crear planetas y anillos
+        const createPlanet = (data) => {
+            const planetGeometry = new THREE.SphereGeometry(data.radius, 32, 32);
+            
+            // Cargar la textura y usarla como mapa de color
+            const mapTexture = textureLoader.load(data.texture);
+            
+            const planetMaterial = new THREE.MeshLambertMaterial({ 
+                map: mapTexture, // Usa la textura de la imagen
+                color: 0xffffff // Base blanca para que la textura no se tiña
+            });
+            const planet = new THREE.Mesh(planetGeometry, planetMaterial);
+            
+            // Ajustar la rotación axial (inclinación)
+            planet.rotation.x = data.axialTilt * (Math.PI / 180); // Convertir grados a radianes
+            
+            planet.userData = data; 
+            interactiveObjects.push(planet); 
+            
+            // Crear el grupo de órbita y rotación
+            const orbitGroup = new THREE.Group();
+            orbitGroup.add(planet);
+
+            // Añadir anillos (Saturno)
+            if (data.rings) {
+                const ringTexture = textureLoader.load('https://cdn.rawgit.com/jeromeetienne/threex.planets/master/images/saturnringmap.png');
+                
+                const ringGeometry = new THREE.RingGeometry(data.radius * 1.3, data.radius * 2.5, 64);
+                const ringMaterial = new THREE.MeshBasicMaterial({ 
+                    map: ringTexture,
+                    side: THREE.DoubleSide,
+                    transparent: true, // Permitir transparencia de la imagen .png
+                    opacity: 0.9,
+                    color: 0xffffff
+                });
+                const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+                ring.rotation.x = Math.PI / 2; // Plano horizontal
+                orbitGroup.add(ring);
+            }
+
+            // Dibuja la órbita
+            const orbit = new THREE.RingGeometry(data.distance - 0.05, data.distance + 0.05, 128);
+            const orbitMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xaaaaaa, 
+                side: THREE.DoubleSide, 
+                transparent: true, 
+                opacity: 0.1 
+            });
+            const orbitMesh = new THREE.Mesh(orbit, orbitMaterial);
+            orbitMesh.rotation.x = Math.PI / 2; 
+            scene.add(orbitMesh);
+
+            planet.position.x = data.distance;
+            
+            scene.add(orbitGroup);
+            return { mesh: planet, group: orbitGroup, data: data };
+        };
+
+        const planets = planetsData.map(createPlanet);
+
+
+        // 7. Loop de Animación (Render Loop)
+        const animate = () => {
+            requestAnimationFrame(animate);
+
+            // Rotación del Sol
+            sun.rotation.y += 0.0005; 
+
+            // Rotación y Órbita de los Planetas
+            planets.forEach(p => {
+                // Rotación sobre su propio eje (Mueve la textura)
+                p.mesh.rotation.y += 0.015; 
+                
+                // Rotación orbital alrededor del Sol
+                p.group.rotation.y += p.data.speed;
+            });
+            
+            controls.update(); 
+            renderer.render(scene, camera);
+        };
+
+        animate();
+
+        // 8. Manejo de Eventos (Redimensionar y Clic)
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Lógica de Clic (Abre el overlay)
+        document.addEventListener('click', (event) => {
+            if (messageOverlay.classList.contains('active')) return;
+            
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            
+            const intersects = raycaster.intersectObjects(interactiveObjects);
+
+            if (intersects.length > 0) {
+                const clickedPlanet = intersects[0].object;
+                
+                document.getElementById('overlayApodo').innerText = clickedPlanet.userData.apodo;
+                document.getElementById('overlayMensaje').innerText = clickedPlanet.userData.mensaje;
+                document.getElementById('messageOverlay').classList.add('active');
+            }
+        });
+        
+        document.getElementById('closeBtn').addEventListener('click', () => {
+            document.getElementById('messageOverlay').classList.remove('active');
+        });
+
+        document.getElementById('messageOverlay').addEventListener('click', (event) => {
+            if (event.target === document.getElementById('messageOverlay')) {
+                document.getElementById('messageOverlay').classList.remove('active');
+            }
+        });
+        
+    </script>
+</body>
+</html>
